@@ -1,15 +1,37 @@
+# CoinButler V3 패키지 의존성
+# 서버 안정성을 위해 분류별로 정리
+
+# ===== 핵심 패키지 (필수) =====
 requests>=2.31.0
 python-dotenv>=1.0.0
-streamlit>=1.28.0
 schedule>=1.2.0
 pandas>=2.2.0
 numpy>=1.26.0
-pyupbit>=0.2.31
-PyJWT>=2.8.0
-python-telegram-bot>=20.5
-schedule>=1.2.0
-google-generativeai>=0.3.0
-websocket-client>=1.6.3
-cryptography>=41.0.4
+
+# ===== 네트워크 안정성 =====
+urllib3>=1.26.0
+certifi>=2023.0.0
+charset-normalizer>=3.0.0
 aiohttp>=3.8.5
+
+# ===== 보안 & 암호화 =====
+cryptography>=41.0.4
+PyJWT>=2.8.0
+
+# ===== 거래소 API =====
+pyupbit>=0.2.31
+websocket-client>=1.6.3
+
+# ===== 웹 인터페이스 (메모리 사용량 높음) =====
+streamlit>=1.28.0
 plotly>=5.15.0
+
+# ===== 알림 시스템 (선택사항) =====
+python-telegram-bot>=20.5
+
+# ===== AI 분석 (선택사항) =====
+google-generativeai>=0.3.0
+
+# ===== 서버 안정성 추가 패키지 =====
+retrying>=1.3.3
+backoff>=2.2.1

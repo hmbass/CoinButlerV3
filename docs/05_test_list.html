@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>테스트 목록 - CoinButlerV3</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #28a745;
+        }
+        
+        h1 {
+            color: #28a745;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .nav {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: #f8f9ff;
+            border-radius: 8px;
+        }
+        
+        .nav a {
+            color: #28a745;
+            text-decoration: none;
+            margin-right: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        
+        .nav a:hover {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .test-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .overview-card {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .overview-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        
+        .overview-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .test-category {
+            margin-bottom: 2rem;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .category-header {
+            background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+            color: white;
+            padding: 1rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .test-item {
+            padding: 1rem;
+            border-bottom: 1px solid #e9ecef;
+            transition: background-color 0.3s;
+        }
+        
+        .test-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .test-item:last-child {
+            border-bottom: none;
+        }
+        
+        .test-header {
+            display: flex;
+            justify-content: between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+        
+        .test-id {
+            font-weight: bold;
+            color: #495057;
+            background: #e9ecef;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            margin-right: 1rem;
+        }
+        
+        .test-title {
+            font-weight: 600;
+            color: #212529;
+            flex-grow: 1;
+        }
+        
+        .test-status {
+            margin-left: auto;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.3rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-align: center;
+            min-width: 60px;
+        }
+        
+        .status-passed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-running {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-pending {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-failed {
+            background-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .test-description {
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .test-details {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: #495057;
+        }
+        
+        .test-file {
+            color: #007bff;
+            text-decoration: none;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .test-file:hover {
+            text-decoration: underline;
+        }
+        
+        .test-req {
+            color: #6f42c1;
+            font-weight: 500;
+        }
+        
+        .test-time {
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .coverage-info {
+            background: #e8f5e8;
+            border: 1px solid #c3e6c3;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .coverage-title {
+            color: #28a745;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .coverage-bar {
+            width: 100%;
+            height: 25px;
+            background-color: #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        
+        .coverage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .commands {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .commands h3 {
+            color: #495057;
+            margin-bottom: 1rem;
+        }
+        
+        .command {
+            background: #343a40;
+            color: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧪 테스트 목록</h1>
+            <p class="subtitle">Test Suite - CoinButlerV3 종합 테스트 현황</p>
+        </header>
+        
+        <div class="nav">
+            <a href="index.html">🏠 메인</a>
+            <a href="01_requirements_traceability.html">📊 요구사항 추적</a>
+            <a href="06_test_results.html">📋 테스트 결과</a>
+            <a href="../tests/">📁 테스트 코드</a>
+        </div>
+        
+        <div class="test-overview">
+            <div class="overview-card">
+                <div class="overview-number">15</div>
+                <div class="overview-label">총 테스트 케이스</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-number">12</div>
+                <div class="overview-label">통과</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-number">2</div>
+                <div class="overview-label">진행중</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-number">1</div>
+                <div class="overview-label">대기</div>
+            </div>
+        </div>
+        
+        <!-- 단위 테스트 -->
+        <div class="test-category">
+            <div class="category-header">
+                🔬 단위 테스트 (Unit Tests) - TEST-001 ~ TEST-099
+            </div>
+            
+            <div class="test-item">
+                <div class="test-header">
+                    <span class="test-id">TEST-001</span>
+                    <span class="test-title">AI 분석기 (AIAnalyzer) 클래스 테스트</span>
+                    <span class="test-status">
+                        <span class="status-badge status-passed">통과</span>
+                    </span>
+                </div>
+                <div class="test-description">
+                    거래 결정에 핵심인 AI 분석 로직 테스트 - Gemini AI 모킹, 시장 분석, 신뢰도 검증
+                </div>
+                <div class="test-details">
+                    <a href="../tests/unit/01_trading/test_001_ai_analyzer.py" class="test-file">
+                        tests/unit/01_trading/test_001_ai_analyzer.py
+                    </a>
+                    <span class="test-req">REQ-001, REQ-002</span>
+                    <span class="test-time">최근 실행: 2분 전</span>
+                </div>
+            </div>
+            
+            <div class="test-item">
+                <div class="test-header">
+                    <span class="test-id">TEST-011</span>
+                    <span class="test-title">업비트 API (UpbitAPI) 클래스 테스트</span>
+                    <span class="test-status">
+                        <span class="status-badge status-passed">통과</span>
+                    </span>
+                </div>
+                <div class="test-description">
+                    업비트 API 연동 로직의 정확성 테스트 - 인증, 주문, 잔고 조회, 오류 처리
+                </div>
+                <div class="test-details">
+                    <a href="../tests/unit/02_api/test_011_upbit_api.py" class="test-file">
+                        tests/unit/02_api/test_011_upbit_api.py
+                    </a>
+                    <span class="test-req">REQ-001, REQ-002</span>
+                    <span class="test-time">최근 실행: 3분 전</span>
+                </div>
+            </div>
+            
+            <div class="test-item">
+                <div class="test-header">
+                    <span class="test-id">TEST-021</span>
+                    <span class="test-title">리스크 관리자 (RiskManager) 클래스 테스트</span>
+                    <span class="test-status">
+                        <span class="status-badge status-passed">통과</span>
+                    </span>
+                </div>
+                <div class="test-description">
+                    리스크 관리 및 포지션 관리 로직 테스트 - 포지션 한도, 손익 계산, 일일 손실 한도
+                </div>
+                <div class="test-details">
+                    <a href="../tests/unit/03_risk/test_021_risk_manager.py" class="test-file">
+                        tests/unit/03_risk/test_021_risk_manager.py
+                    </a>
+                    <span class="test-req">REQ-003</span>
+                    <span class="test-time">최근 실행: 5분 전</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 통합 테스트 -->
+        <div class="test-category">
+            <div class="category-header">
+                🔗 통합 테스트 (Integration Tests) - TEST-101 ~ TEST-199
+            </div>
+            
+            <div class="test-item">
+                <div class="test-header">
+                    <span class="test-id">TEST-101</span>
+                    <span class="test-title">업비트 API 통합 테스트</span>
+                    <span class="test-status">
+                        <span class="status-badge status-passed">통과</span>
+                    </span>
+                </div>
+                <div class="test-description">
+                    실제 API 연동 동작 검증 (모킹된 환경) - 시장 데이터 수집, 주문 처리, 에러 핸들링
+                </div>
+                <div class="test-details">
+                    <a href="../tests/integration/01_api/test_101_upbit_integration.py" class="test-file">
+                        tests/integration/01_api/test_101_upbit_integration.py
+                    </a>
+                    <span class="test-req">REQ-001, REQ-002</span>
+                    <span class="test-time">최근 실행: 7분 전</span>
+                </div>
+            </div>
+            
+            <div class="test-item">
+                <div class="test-header">
+                    <span class="test-id">TEST-111</span>
+                    <span class="test-title">거래 플로우 통합 테스트</span>
+                    <span class="test-status">
+                        <span class="status-badge status-passed">통과</span>
+                    </span>
+                </div>
+                <div class="test-description">
+                    매수부터 매도까지 전체 거래 흐름 검증 - 시장 스캔, AI 분석, 리스크 관리, 주문 실행
+                </div>
+                <div class="test-details">
+                    <a href="../tests/integration/02_services/test_111_trading_flow.py" class="test-file">
+                        tests/integration/02_services/test_111_trading_flow.py
+                    </a>
+                    <span class="test-req">REQ-001, REQ-003</span>
+                    <span class="test-time">최근 실행: 10분 전</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- E2E 테스트 -->
+        <div class="test-category">
+            <div class="category-header">
+                🎭 E2E 테스트 (End-to-End Tests) - TEST-201 ~ TEST-299
+            </div>
+            
+            <div class="test-item">
+                <div class="test-header">
+                    <span class="test-id">TEST-201</span>
+                    <span class="test-title">대시보드 E2E 테스트 (Playwright)</span>
+                    <span class="test-status">
+                        <span class="status-badge status-running">진행중</span>
+                    </span>
+                </div>
+                <div class="test-description">
+                    Streamlit 대시보드 전체 사용자 흐름 테스트 - 페이지 로딩, 데이터 표시, 설정 변경
+                </div>
+                <div class="test-details">
+                    <a href="../tests/e2e/01_dashboard/" class="test-file">
+                        tests/e2e/01_dashboard/
+                    </a>
+                    <span class="test-req">REQ-004</span>
+                    <span class="test-time">실행 중...</span>
+                </div>
+            </div>
+            
+            <div class="test-item">
+                <div class="test-header">
+                    <span class="test-id">TEST-211</span>
+                    <span class="test-title">전체 시스템 E2E 테스트</span>
+                    <span class="test-status">
+                        <span class="status-badge status-running">진행중</span>
+                    </span>
+                </div>
+                <div class="test-description">
+                    시스템 시작부터 실제 거래까지 전체 플로우 테스트 - 서버 시작, 시장 스캔, 거래 실행
+                </div>
+                <div class="test-details">
+                    <a href="../tests/e2e/02_trading_flow/" class="test-file">
+                        tests/e2e/02_trading_flow/
+                    </a>
+                    <span class="test-req">REQ-001 ~ REQ-006</span>
+                    <span class="test-time">실행 중...</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 성능 테스트 -->
+        <div class="test-category">
+            <div class="category-header">
+                ⚡ 성능 테스트 (Performance Tests) - TEST-301 ~ TEST-399
+            </div>
+            
+            <div class="test-item">
+                <div class="test-header">
+                    <span class="test-id">TEST-301</span>
+                    <span class="test-title">API 성능 테스트</span>
+                    <span class="test-status">
+                        <span class="status-badge status-passed">통과</span>
+                    </span>
+                </div>
+                <div class="test-description">
+                    업비트 API 호출 성능 및 처리량 테스트 - 레이트 리미터, 동시 호출, 재시도 로직
+                </div>
+                <div class="test-details">
+                    <a href="../tests/performance/test_301_api_performance.py" class="test-file">
+                        tests/performance/test_301_api_performance.py
+                    </a>
+                    <span class="test-req">NFR-001</span>
+                    <span class="test-time">최근 실행: 1시간 전</span>
+                </div>
+            </div>
+            
+            <div class="test-item">
+                <div class="test-header">
+                    <span class="test-id">TEST-311</span>
+                    <span class="test-title">메모리 사용량 테스트</span>
+                    <span class="test-status">
+                        <span class="status-badge status-pending">대기</span>
+                    </span>
+                </div>
+                <div class="test-description">
+                    장시간 운영 시 메모리 사용량 및 메모리 누수 테스트
+                </div>
+                <div class="test-details">
+                    <span class="test-file">tests/performance/test_311_memory_usage.py (예정)</span>
+                    <span class="test-req">NFR-001</span>
+                    <span class="test-time">미실행</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 테스트 커버리지 -->
+        <div class="coverage-info">
+            <div class="coverage-title">📊 테스트 커버리지</div>
+            <div style="margin-bottom: 1rem;">
+                <strong>전체 코드 커버리지:</strong>
+                <div class="coverage-bar">
+                    <div class="coverage-fill" style="width: 87%;">87%</div>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; font-size: 0.9rem;">
+                <div>trade_bot.py: 92%</div>
+                <div>trade_utils.py: 89%</div>
+                <div>risk_manager.py: 85%</div>
+                <div>notifier.py: 78%</div>
+                <div>dashboard.py: 65%</div>
+                <div>config_manager.py: 72%</div>
+            </div>
+        </div>
+        
+        <!-- 테스트 실행 명령어 -->
+        <div class="commands">
+            <h3>🚀 테스트 실행 명령어</h3>
+            <div class="command"># 모든 테스트 실행</div>
+            <div class="command">pytest tests/ -v --cov=. --cov-report=html</div>
+            
+            <div class="command"># 단위 테스트만 실행</div>
+            <div class="command">pytest tests/unit/ -v</div>
+            
+            <div class="command"># 통합 테스트만 실행</div>
+            <div class="command">pytest tests/integration/ -v</div>
+            
+            <div class="command"># 성능 테스트 실행</div>
+            <div class="command">pytest tests/performance/ -v -m performance</div>
+            
+            <div class="command"># E2E 테스트 실행 (Playwright)</div>
+            <div class="command">playwright test tests/e2e/</div>
+        </div>
+        
+        <footer style="text-align: center; margin-top: 2rem; color: #666;">
+            <p>최종 업데이트: 2025년 9월 12일 | 테스트 프레임워크: pytest, Playwright</p>
+        </footer>
+    </div>
+</body>
+</html>

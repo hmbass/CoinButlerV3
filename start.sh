@@ -127,9 +127,37 @@ setup_environment() {
     # 가상환경 활성화
     source venv/bin/activate
     
-    # 의존성 패키지 설치 (조용히)
+    # pip 업그레이드 (안정성 향상)
+    log_step "pip 업그레이드 중..."
+    pip install --upgrade pip --quiet --timeout=60 --retries=3
+    
+    # 의존성 패키지 설치 (네트워크 오류 대응 강화)
     log_step "필요한 패키지 확인 중..."
-    pip install -q -r requirements.txt
+    
+    # 1차 시도: 기본 설치
+    if pip install -r requirements.txt --timeout=60 --retries=5 --quiet; then
+        log_info "패키지 설치 성공"
+    else
+        log_warn "기본 설치 실패, 대안 방법으로 재시도 중..."
+        
+        # 2차 시도: 개별 패키지 설치
+        while IFS= read -r package || [[ -n "$package" ]]; do
+            # 주석 및 빈 줄 건너뛰기
+            [[ "$package" =~ ^[[:space:]]*# ]] && continue
+            [[ -z "${package// }" ]] && continue
+            
+            echo "설치 중: $package"
+            if ! pip install "$package" --timeout=60 --retries=3 --quiet; then
+                log_warn "패키지 설치 실패: $package (계속 진행)"
+            fi
+        done < requirements.txt
+        
+        # 3차 시도: 국내 미러 서버 사용
+        if ! pip list | grep -q "streamlit\|schedule"; then
+            log_warn "핵심 패키지 누락, 국내 미러로 재시도 중..."
+            pip install -r requirements.txt -i https://pypi.python.org/simple/ --trusted-host pypi.python.org --timeout=120 --retries=5 --quiet || true
+        fi
+    fi
     
     # .env 파일 확인
     if [ ! -f ".env" ]; then
