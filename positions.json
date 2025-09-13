@@ -1,0 +1,24 @@
+{
+  "KRW-ETH": {
+    "market": "KRW-ETH",
+    "entry_price": 3000000,
+    "exit_price": null,
+    "quantity": 0.1,
+    "entry_time": "2025-09-12T13:24:45.154343",
+    "exit_time": null,
+    "investment_amount": 300000,
+    "profit_loss": null,
+    "status": "open"
+  },
+  "KRW-XRP": {
+    "market": "KRW-XRP",
+    "entry_price": 600,
+    "exit_price": null,
+    "quantity": 500,
+    "entry_time": "2025-09-12T13:24:45.171471",
+    "exit_time": null,
+    "investment_amount": 300000,
+    "profit_loss": null,
+    "status": "open"
+  }
+}

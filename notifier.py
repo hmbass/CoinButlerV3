@@ -1,0 +1,351 @@
+"""
+텔레그램 알림 기능 모듈
+"""
+import os
+import asyncio
+import logging
+from datetime import datetime
+from typing import Optional
+import requests
+from telegram import Bot
+from telegram.error import TelegramError
+
+def setup_integrated_logging():
+    """통합 로깅 설정 (trade_bot과 동일한 파일 사용)"""
+    logger = logging.getLogger(__name__)
+    
+    # 이미 핸들러가 있으면 제거
+    for handler in logger.handlers[:]:
+        logger.removeHandler(handler)
+    
+    # coinbutler_main.log에 로깅하도록 설정
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler = logging.FileHandler('coinbutler_main.log', encoding='utf-8')
+    file_handler.setFormatter(formatter)
+    
+    logger.addHandler(file_handler)
+    logger.setLevel(logging.INFO)
+    
+    return logger
+
+logger = setup_integrated_logging()
+# 로그 레벨을 환경변수로 설정 가능 (기본: WARNING)
+log_level = os.getenv('LOG_LEVEL', 'WARNING').upper()
+logger.setLevel(getattr(logging, log_level))
+
+class TelegramNotifier:
+    """텔레그램 알림 클래스"""
+    
+    def __init__(self, bot_token: str, chat_id: str):
+        self.bot_token = bot_token
+        self.chat_id = chat_id
+        self.bot = Bot(token=bot_token)
+        self.base_url = f"https://api.telegram.org/bot{bot_token}"
+        
+    def send_message_sync(self, message: str) -> bool:
+        """동기 방식으로 메시지 전송 (requests 사용)"""
+        try:
+            url = f"{self.base_url}/sendMessage"
+            data = {
+                'chat_id': self.chat_id,
+                'text': message,
+                'parse_mode': 'HTML'
+            }
+            
+            response = requests.post(url, data=data, timeout=10)
+            response.raise_for_status()
+            
+            logger.info(f"텔레그램 메시지 전송 성공")
+            return True
+            
+        except Exception as e:
+            logger.error(f"텔레그램 메시지 전송 실패: {e}")
+            return False
+    
+    async def send_message_async(self, message: str) -> bool:
+        """비동기 방식으로 메시지 전송"""
+        try:
+            await self.bot.send_message(
+                chat_id=self.chat_id,
+                text=message,
+                parse_mode='HTML'
+            )
+            logger.info("텔레그램 메시지 전송 성공 (비동기)")
+            return True
+            
+        except TelegramError as e:
+            logger.error(f"텔레그램 메시지 전송 실패 (비동기): {e}")
+            return False
+    
+    def send_buy_notification(self, market: str, price: float, amount: float, 
+                             reason: str = "") -> bool:
+        """매수 알림"""
+        coin_name = market.replace('KRW-', '')
+        message = f"""
+🟢 <b>매수 알림</b>
+━━━━━━━━━━━━━━━━━━━━
+💰 종목: <b>{coin_name}</b>
+💵 가격: <b>{price:,.0f}원</b>
+💸 금액: <b>{amount:,.0f}원</b>
+📊 사유: {reason}
+⏰ 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+━━━━━━━━━━━━━━━━━━━━
+        """.strip()
+        
+        return self.send_message_sync(message)
+    
+    def send_sell_notification(self, market: str, price: float, amount: float,
+                              profit_loss: float, profit_rate: float, 
+                              reason: str = "") -> bool:
+        """매도 알림"""
+        coin_name = market.replace('KRW-', '')
+        profit_emoji = "🔴" if profit_loss < 0 else "🟢"
+        profit_text = "손실" if profit_loss < 0 else "수익"
+        
+        message = f"""
+{profit_emoji} <b>매도 알림</b>
+━━━━━━━━━━━━━━━━━━━━
+💰 종목: <b>{coin_name}</b>
+💵 가격: <b>{price:,.0f}원</b>
+💸 금액: <b>{amount:,.0f}원</b>
+📈 {profit_text}: <b>{profit_loss:,.0f}원 ({profit_rate:+.2f}%)</b>
+📊 사유: {reason}
+⏰ 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+━━━━━━━━━━━━━━━━━━━━
+        """.strip()
+        
+        return self.send_message_sync(message)
+    
+    def send_daily_summary(self, total_pnl: float, trade_count: int, 
+                          win_rate: float, positions: int) -> bool:
+        """일일 요약 알림"""
+        pnl_emoji = "🔴" if total_pnl < 0 else "🟢"
+        pnl_text = "손실" if total_pnl < 0 else "수익"
+        
+        message = f"""
+📊 <b>일일 거래 요약</b>
+━━━━━━━━━━━━━━━━━━━━
+{pnl_emoji} 총 {pnl_text}: <b>{total_pnl:,.0f}원</b>
+🔢 거래 횟수: <b>{trade_count}회</b>
+🎯 승률: <b>{win_rate:.1f}%</b>
+📋 현재 포지션: <b>{positions}개</b>
+⏰ 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+━━━━━━━━━━━━━━━━━━━━
+        """.strip()
+        
+        return self.send_message_sync(message)
+    
+    def send_error_notification(self, error_type: str, error_message: str) -> bool:
+        """에러 알림"""
+        message = f"""
+🚨 <b>시스템 오류</b>
+━━━━━━━━━━━━━━━━━━━━
+⚠️ 유형: <b>{error_type}</b>
+📝 내용: {error_message}
+⏰ 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+━━━━━━━━━━━━━━━━━━━━
+        """.strip()
+        
+        return self.send_message_sync(message)
+    
+    def send_bot_status(self, status: str, message: str = "") -> bool:
+        """봇 상태 알림"""
+        status_emoji = {
+            "started": "🟢",
+            "stopped": "🔴", 
+            "paused": "🟡",
+            "error": "🚨"
+        }
+        
+        emoji = status_emoji.get(status, "ℹ️")
+        
+        notification = f"""
+{emoji} <b>CoinButler 상태</b>
+━━━━━━━━━━━━━━━━━━━━
+📊 상태: <b>{status.upper()}</b>
+📝 메시지: {message}
+⏰ 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+━━━━━━━━━━━━━━━━━━━━
+        """.strip()
+        
+        return self.send_message_sync(notification)
+    
+    def send_daily_loss_limit_alert(self, current_loss: float, limit: float) -> bool:
+        """일일 손실 한도 초과 알림"""
+        message = f"""
+🚨 <b>일일 손실 한도 초과!</b>
+━━━━━━━━━━━━━━━━━━━━
+💸 현재 손실: <b>{current_loss:,.0f}원</b>
+⚠️ 설정 한도: <b>{limit:,.0f}원</b>
+🛑 거래 중단됨
+⏰ 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+━━━━━━━━━━━━━━━━━━━━
+🔄 내일 자정에 자동으로 거래가 재개됩니다.
+        """.strip()
+        
+        return self.send_message_sync(message)
+    
+    def send_volume_spike_alert(self, market: str, volume_ratio: float, 
+                               price_change: float) -> bool:
+        """거래량 급등 감지 알림"""
+        coin_name = market.replace('KRW-', '')
+        
+        message = f"""
+🚀 <b>거래량 급등 감지!</b>
+━━━━━━━━━━━━━━━━━━━━
+💰 종목: <b>{coin_name}</b>
+📊 거래량 증가: <b>{volume_ratio:.1f}배</b>
+📈 가격 변동: <b>{price_change:+.2f}%</b>
+⏰ 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+━━━━━━━━━━━━━━━━━━━━
+        """.strip()
+        
+        return self.send_message_sync(message)
+    
+    def send_rebalancing_notification(self, sell_market: str, buy_market: str, 
+                                    reason: str, expected_profit: float) -> bool:
+        """리밸런싱 알림"""
+        sell_coin = sell_market.replace('KRW-', '')
+        buy_coin = buy_market.replace('KRW-', '')
+        
+        message = f"""
+🔄 <b>리밸런싱 실행</b>
+━━━━━━━━━━━━━━━━━━━━
+📉 매도: <b>{sell_coin}</b>
+📈 매수: <b>{buy_coin}</b>
+💡 사유: {reason}
+🎯 예상 수익: <b>{expected_profit:+.1f}%</b>
+⏰ 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+━━━━━━━━━━━━━━━━━━━━
+💰 12시간 이상 무수익 포지션을 더 유망한 종목으로 교체했습니다.
+        """.strip()
+        
+        return self.send_message_sync(message)
+    
+    def test_connection(self) -> bool:
+        """텔레그램 연결 테스트"""
+        test_message = f"""
+🔧 <b>CoinButler 연결 테스트</b>
+━━━━━━━━━━━━━━━━━━━━
+✅ 텔레그램 연결이 정상적으로 작동합니다.
+⏰ 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+━━━━━━━━━━━━━━━━━━━━
+        """.strip()
+        
+        return self.send_message_sync(test_message)
+
+def get_telegram_notifier() -> Optional[TelegramNotifier]:
+    """환경 변수에서 텔레그램 알림기 인스턴스 생성"""
+    bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+    chat_id = os.getenv('TELEGRAM_CHAT_ID')
+    
+    if not bot_token or not chat_id:
+        logger.warning("텔레그램 설정이 없습니다. 알림 기능이 비활성화됩니다.")
+        return None
+    
+    notifier = TelegramNotifier(bot_token, chat_id)
+    
+    # 연결 테스트
+    logger.info("🔧 텔레그램 연결 테스트 중...")
+    if not notifier.test_connection():
+        logger.error("❌ 텔레그램 연결 테스트 실패")
+        logger.error("💡 다음 사항을 확인하세요:")
+        logger.error("   1. TELEGRAM_BOT_TOKEN이 올바른지 확인")
+        logger.error("   2. TELEGRAM_CHAT_ID가 올바른지 확인")
+        logger.error("   3. 봇이 채팅방에 추가되어 있는지 확인")
+        logger.error("   4. 인터넷 연결 상태 확인")
+        return None
+    else:
+        logger.info("✅ 텔레그램 연결 테스트 성공")
+    
+    return notifier
+
+# 전역 알림기 인스턴스
+_notifier: Optional[TelegramNotifier] = None
+
+def init_notifier():
+    """전역 알림기 초기화"""
+    global _notifier
+    
+    logger.info("📱 텔레그램 알림 시스템 초기화 중...")
+    
+    _notifier = get_telegram_notifier()
+    
+    if _notifier:
+        logger.info("✅ 텔레그램 알림 시스템이 성공적으로 초기화되었습니다.")
+        logger.info("📱 매수/매도 시 텔레그램 알림이 전송됩니다.")
+    else:
+        logger.error("❌ 텔레그램 알림 시스템 초기화 실패!")
+        logger.warning("📱 TELEGRAM_BOT_TOKEN과 TELEGRAM_CHAT_ID 환경변수를 확인하세요.")
+        logger.info("💡 .env 파일에서 다음 설정을 확인하세요:")
+        logger.info("   TELEGRAM_BOT_TOKEN=your_bot_token")
+        logger.info("   TELEGRAM_CHAT_ID=your_chat_id")
+
+def notify_buy(market: str, price: float, amount: float, reason: str = ""):
+    """매수 알림 전송"""
+    if _notifier:
+        success = _notifier.send_buy_notification(market, price, amount, reason)
+        if success:
+            logger.info(f"📱 매수 텔레그램 알림 전송 완료: {market}")
+        else:
+            logger.error(f"📱 매수 텔레그램 알림 전송 실패: {market}")
+    else:
+        logger.warning("📱 텔레그램 알림이 설정되지 않음 (매수 알림 스킵)")
+        logger.info(f"💰 매수 정보: {market} {price:,.0f}원 {amount:,.0f}원 - {reason}")
+
+def notify_sell(market: str, price: float, amount: float, profit_loss: float, 
+               profit_rate: float, reason: str = ""):
+    """매도 알림 전송"""
+    if _notifier:
+        success = _notifier.send_sell_notification(market, price, amount, profit_loss, profit_rate, reason)
+        if success:
+            logger.info(f"📱 매도 텔레그램 알림 전송 완료: {market}")
+        else:
+            logger.error(f"📱 매도 텔레그램 알림 전송 실패: {market}")
+    else:
+        logger.warning("📱 텔레그램 알림이 설정되지 않음 (매도 알림 스킵)")
+        logger.info(f"💰 매도 정보: {market} {price:,.0f}원 {amount:,.0f}원 손익:{profit_loss:,.0f}원 ({profit_rate:+.2f}%) - {reason}")
+
+def notify_info(title: str, message: str):
+    """일반 정보 알림 전송"""
+    if _notifier:
+        success = _notifier.send_message(f"📢 {title}", message)
+        if success:
+            logger.info(f"📱 정보 텔레그램 알림 전송 완료: {title}")
+        else:
+            logger.error(f"📱 정보 텔레그램 알림 전송 실패: {title}")
+    else:
+        logger.warning("📱 텔레그램 알림이 설정되지 않음 (정보 알림 스킵)")
+        logger.info(f"📢 {title}: {message}")
+
+def notify_error(error_type: str, error_message: str):
+    """에러 알림 전송"""
+    if _notifier:
+        _notifier.send_error_notification(error_type, error_message)
+
+def notify_bot_status(status: str, message: str = ""):
+    """봇 상태 알림 전송"""
+    if _notifier:
+        _notifier.send_bot_status(status, message)
+
+def notify_daily_loss_limit(current_loss: float, limit: float):
+    """일일 손실 한도 초과 알림 전송"""
+    if _notifier:
+        _notifier.send_daily_loss_limit_alert(current_loss, limit)
+
+def notify_volume_spike(market: str, volume_ratio: float, price_change: float):
+    """거래량 급등 감지 알림 전송"""
+    if _notifier:
+        _notifier.send_volume_spike_alert(market, volume_ratio, price_change)
+
+def notify_rebalancing(sell_market: str, buy_market: str, reason: str, expected_profit: float):
+    """리밸런싱 알림 전송"""
+    if _notifier:
+        success = _notifier.send_rebalancing_notification(sell_market, buy_market, reason, expected_profit)
+        if success:
+            logger.info(f"📱 리밸런싱 텔레그램 알림 전송 완료: {sell_market} → {buy_market}")
+        else:
+            logger.error(f"📱 리밸런싱 텔레그램 알림 전송 실패: {sell_market} → {buy_market}")
+    else:
+        logger.warning("📱 텔레그램 알림이 설정되지 않음 (리밸런싱 알림 스킵)")
+        logger.info(f"🔄 리밸런싱 정보: {sell_market} → {buy_market} - {reason}")
